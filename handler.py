@@ -59,11 +59,32 @@ class DreamBoothFluxHandler:
         self.trained_model_path = None
         
         # Optional: Configure torch.compile for dramatic speedups (if supported)
+        # Set ENABLE_TORCH_COMPILE=true in RunPod environment variables for speedups
         self.enable_torch_compile = os.getenv("ENABLE_TORCH_COMPILE", "false").lower() == "true"
         if self.enable_torch_compile and hasattr(torch, 'compile'):
             print("🚀 Torch compile mode enabled for dramatic speedups")
         elif self.enable_torch_compile:
             print("⚠️  Torch compile requested but not available in this PyTorch version")
+        
+        # Initialize Accelerator with TorchDynamoPlugin for dramatic speedups when enabled
+        if self.enable_torch_compile:
+            try:
+                from accelerate import Accelerator
+                from accelerate.utils import TorchDynamoPlugin
+                
+                dynamo_plugin = TorchDynamoPlugin(
+                    backend="inductor",   # Best backend for speedups
+                    mode="default",       # Balanced performance
+                    fullgraph=True,       # Compile entire graph
+                    dynamic=False         # Static compilation for better performance
+                )
+                self.accelerator = Accelerator(dynamo_plugin=dynamo_plugin)
+                print("🚀 Accelerator initialized with TorchDynamoPlugin for dramatic speedups!")
+            except Exception as e:
+                print(f"⚠️  Failed to initialize TorchDynamoPlugin: {e}")
+                self.accelerator = None
+        else:
+            self.accelerator = None
         
         print("🎯 Training mode: Full fine-tuning (UNet + Text Encoder) for maximum likeness - NOT LoRA")
         
