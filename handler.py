@@ -87,6 +87,7 @@ class DreamBoothFluxHandler:
             self.accelerator = None
         
         print("🎯 Training mode: Full fine-tuning (UNet + Text Encoder) for maximum likeness - NOT LoRA")
+        print("💾 Memory optimization: bitsandbytes 8-bit optimizer + gradient checkpointing supported")
         
     def load_model(self, model_path: str = None):
         """Load the trained model or base model"""

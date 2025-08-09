@@ -7,10 +7,10 @@ ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 
-# Install system dependencies (Python 3.8 with compatible numpy/scipy versions)
+# Install system dependencies (Python 3.9+ for bitsandbytes compatibility)
 RUN apt-get update && apt-get install -y \
-    python3.8 \
-    python3.8-dev \
+    python3.9 \
+    python3.9-dev \
     python3-pip \
     git \
     wget \
@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create symbolic link for python
-RUN ln -s /usr/bin/python3.8 /usr/bin/python
+RUN ln -s /usr/bin/python3.9 /usr/bin/python
 
 # Verify Python version
 RUN python --version
@@ -40,17 +40,17 @@ RUN pip install --no-cache-dir --upgrade pip
 # Install core dependencies first
 RUN pip install --no-cache-dir packaging setuptools wheel
 
-# Install PyTorch with CUDA support (exact matching versions for CUDA 11.8)
-RUN pip install --no-cache-dir torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+# Install PyTorch with CUDA support (PyTorch 2.2+ for bitsandbytes compatibility)
+RUN pip install --no-cache-dir torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
 # Install basic dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install performance optimizations with exact versions (compatible with torch 2.0.0)
-RUN pip install --no-cache-dir xformers==0.0.20
+# Install performance optimizations (compatible with PyTorch 2.2+)
+RUN pip install --no-cache-dir xformers>=0.0.23
 
-# Install bitsandbytes with exact version
-RUN pip install --no-cache-dir bitsandbytes==0.41.0
+# Install bitsandbytes for 8-bit optimizer support (latest stable version)
+RUN pip install --no-cache-dir bitsandbytes>=0.46.0
 
 # Install FLUX-specific dependencies
 RUN pip install --no-cache-dir prodigyopt
