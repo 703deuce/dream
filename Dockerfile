@@ -37,13 +37,13 @@ RUN pip install --no-cache-dir --upgrade pip
 # Install core dependencies first
 RUN pip install --no-cache-dir packaging setuptools wheel
 
-# Install PyTorch with CUDA support (pinned versions for compatibility)
-RUN pip install --no-cache-dir torch==2.0.1 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+# Install PyTorch with CUDA support (exact matching versions for CUDA 11.8)
+RUN pip install --no-cache-dir torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
 # Install basic dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install performance optimizations with exact versions
+# Install performance optimizations with exact versions (compatible with torch 2.0.0)
 RUN pip install --no-cache-dir xformers==0.0.20
 
 # Install bitsandbytes with exact version
