@@ -13,6 +13,10 @@ import tempfile
 import shutil
 from pathlib import Path
 from huggingface_hub import login as hf_login
+import sys
+
+# Add the dreambooth_examples directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'dreambooth_examples'))
 
 # Configure logging
 logging.set_verbosity_info()
@@ -81,7 +85,7 @@ class DreamBoothFluxHandler:
         return image_paths
     
     def train_dreambooth(self, job_input: Dict[str, Any]) -> Dict[str, Any]:
-        """Train DreamBooth model with full fine-tuning"""
+        """Train DreamBooth model with full fine-tuning for maximum likeness"""
         try:
             # Extract training parameters
             instance_prompt = job_input.get("instance_prompt", "a photo of sks person")
@@ -98,67 +102,91 @@ class DreamBoothFluxHandler:
             if image_urls:
                 self.download_images(image_urls, instance_data_dir)
             
-            # Training parameters for FLUX DreamBooth
+            # Training parameters for FLUX DreamBooth - OPTIMIZED FOR MAXIMUM LIKENESS
             training_args = {
                 "pretrained_model_name_or_path": self.model_id,
                 "instance_data_dir": instance_data_dir,
                 "output_dir": output_dir,
                 "instance_prompt": instance_prompt,
                 "class_prompt": class_prompt,
-                "resolution": 1024,  # FLUX uses 1024 resolution
+                "resolution": 1024,  # FLUX uses 1024 resolution for best quality
                 "train_batch_size": 1,
                 "gradient_accumulation_steps": 4,
-                "max_train_steps": 500,  # FLUX example uses 500 steps
-                "learning_rate": 1.0,  # FLUX uses 1.0 learning rate
+                "max_train_steps": 1000,  # Increased for better likeness
+                "learning_rate": 1.0,  # FLUX uses 1.0 learning rate with Prodigy
                 "lr_scheduler": "constant",
                 "lr_warmup_steps": 0,
                 "mixed_precision": "bf16",  # FLUX uses bf16
                 "guidance_scale": 1,
-                "optimizer": "prodigy",  # FLUX uses Prodigy optimizer
+                "optimizer": "prodigy",  # Prodigy optimizer for best results
                 "seed": 0,
                 "save_steps": 100,
-                "save_total_limit": 2,
+                "save_total_limit": 3,  # Keep more checkpoints for blending
+                "validation_prompt": instance_prompt,  # Validate with instance prompt
+                "validation_epochs": 25,  # Regular validation
+                "num_validation_images": 4,
+                "report_to": "tensorboard",  # Use tensorboard for logging
+                "train_text_encoder": True,  # CRITICAL: Train text encoder for best likeness
+                "max_sequence_length": 512,  # Support longer prompts
+                "gradient_checkpointing": True,  # Memory optimization
+                "cache_latents": True,  # Memory optimization
+                "aspect_ratio_buckets": "672,1568;688,1504;720,1456;752,1392;800,1328;832,1248;880,1184;944,1104;1024,1024;1104,944;1184,880;1248,832;1328,800;1392,752;1456,720;1504,688;1568,672"  # Support different aspect ratios
             }
             
-            # Run training using accelerate
-            from accelerate import Accelerator
-            from accelerate.utils import set_seed
+            # Import the local FLUX training script
+            try:
+                from train_dreambooth_flux import main as train_main
+                print("✅ Successfully imported local FLUX training script")
+            except ImportError as e:
+                print(f"❌ Failed to import local FLUX training script: {e}")
+                return {
+                    "status": "error",
+                    "message": f"Failed to import local training script: {str(e)}"
+                }
             
-            accelerator = Accelerator(
-                gradient_accumulation_steps=training_args["gradient_accumulation_steps"],
-                mixed_precision=training_args["mixed_precision"],
-                log_with="tensorboard",
-                project_dir=output_dir,
-            )
+            # Create a mock args object that mimics argparse.Namespace
+            class MockArgs:
+                def __init__(self, **kwargs):
+                    for key, value in kwargs.items():
+                        setattr(self, key, value)
             
-            set_seed(training_args["seed"])
+            # Convert training args to MockArgs object
+            args = MockArgs(**training_args)
             
-            # Import and run FLUX training script
-            from train_dreambooth_flux import main as train_main
-            train_main(training_args, accelerator)
+            # Run training using the local FLUX script
+            print("🚀 Starting FLUX DreamBooth training with maximum likeness settings...")
+            print(f"📸 Training on {len(os.listdir(instance_data_dir))} images")
+            print(f"🎯 Instance prompt: {instance_prompt}")
+            print(f"🔧 Training text encoder: {training_args['train_text_encoder']}")
+            print(f"📏 Resolution: {training_args['resolution']}")
+            print(f"⚡ Optimizer: {training_args['optimizer']}")
+            
+            train_main(args)
             
             return {
                 "status": "success",
-                "message": "DreamBooth training completed successfully",
+                "message": "FLUX DreamBooth training completed successfully with maximum likeness settings",
                 "output_dir": output_dir,
-                "model_path": output_dir
+                "model_path": output_dir,
+                "training_config": training_args
             }
             
         except Exception as e:
             return {
                 "status": "error",
-                "message": f"Training failed: {str(e)}"
+                "message": f"Training failed: {str(e)}",
+                "error_details": str(e)
             }
     
     def generate_image(self, job_input: Dict[str, Any]) -> Dict[str, Any]:
         """Generate image using trained model"""
         try:
             prompt = job_input.get("prompt", "a photo of sks person")
-            negative_prompt = job_input.get("negative_prompt", "blurry, bad quality, distorted")
+            negative_prompt = job_input.get("negative_prompt", "blurry, bad quality, distorted, low resolution, ugly, deformed")
             num_inference_steps = job_input.get("num_inference_steps", 50)
             guidance_scale = job_input.get("guidance_scale", 7.5)
-            width = job_input.get("width", 512)
-            height = job_input.get("height", 512)
+            width = job_input.get("width", 1024)  # Default to FLUX resolution
+            height = job_input.get("height", 1024)
             num_images = job_input.get("num_images", 1)
             
             # Load model if not already loaded
