@@ -3,22 +3,6 @@ packaging>=21.0
 setuptools>=65.0
 wheel>=0.38.0
 
-# Core PyTorch and ML dependencies
-torch>=2.0.0
-torchvision>=0.15.0
-torchaudio>=2.0.0
-
-# Hugging Face ecosystem
-# Note: diffusers is installed from source for DreamBooth Flux
-transformers>=4.30.0
-accelerate>=0.20.0
-datasets>=2.12.0
-huggingface-hub>=0.15.0
-
-# Image processing
-Pillow>=9.5.0
-opencv-python>=4.8.0
-
 # Scientific computing
 numpy>=1.24.0
 scipy>=1.10.0
@@ -27,18 +11,15 @@ scipy>=1.10.0
 requests>=2.31.0
 tqdm>=4.65.0
 
-# Performance optimizations
-xformers>=0.0.20
-bitsandbytes>=0.41.0
-flash-attn>=2.0.0
-triton>=2.0.0
+# Image processing
+Pillow>=9.5.0
+opencv-python>=4.8.0
 
-# FLUX-specific dependencies
-prodigy-optimizer>=1.0.0
-
-# Monitoring and logging
-tensorboard>=2.13.0
-wandb>=0.15.0
+# Hugging Face ecosystem
+transformers>=4.30.0
+accelerate>=0.20.0
+datasets>=2.12.0
+huggingface-hub>=0.15.0
 
 # Configuration and serialization
 safetensors>=0.3.0
@@ -50,7 +31,6 @@ ftfy>=6.1.0
 regex>=2023.0.0
 einops>=0.6.0
 
-# Development and testing
-pytest>=7.0.0
-black>=23.0.0
-isort>=5.12.0
+# Monitoring and logging
+tensorboard>=2.13.0
+wandb>=0.15.0

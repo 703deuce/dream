@@ -40,14 +40,17 @@ RUN pip install --no-cache-dir packaging setuptools wheel
 # Install PyTorch with CUDA support
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# Install other dependencies
+# Install basic dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install performance optimizations separately
+RUN pip install --no-cache-dir xformers bitsandbytes
+
+# Install FLUX-specific dependencies
+RUN pip install --no-cache-dir prodigy-optimizer
+
 # Install additional performance optimizations
-RUN pip install --no-cache-dir \
-    ninja \
-    flash-attn \
-    triton
+RUN pip install --no-cache-dir ninja flash-attn triton
 
 # Clone and install diffusers from source for latest DreamBooth Flux support
 RUN git clone https://github.com/huggingface/diffusers && \
