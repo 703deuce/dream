@@ -53,7 +53,7 @@ RUN pip install --no-cache-dir xformers==0.0.20
 RUN pip install --no-cache-dir bitsandbytes==0.41.0
 
 # Install FLUX-specific dependencies
-RUN pip install --no-cache-dir prodigy-optimizer==1.0.0
+RUN pip install --no-cache-dir prodigyopt
 
 # Install additional performance optimizations with exact versions
 RUN pip install --no-cache-dir ninja flash-attn==0.2.4 triton==2.0.0
