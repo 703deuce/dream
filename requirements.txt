@@ -31,5 +31,5 @@ regex==2023.8.8
 einops==0.7.0
 
 # Monitoring and logging
-tensorboard==2.14.1
+tensorboard==2.14.0
 wandb==0.15.12
