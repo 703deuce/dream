@@ -16,6 +16,14 @@ from huggingface_hub import login as hf_login
 import subprocess
 import sys
 
+# Configure Accelerate for serverless RunPod environment (non-interactive)
+try:
+    from accelerate.utils import write_basic_config
+    write_basic_config()
+    print("✅ Accelerate configuration initialized for serverless environment")
+except Exception as e:
+    print(f"⚠️  Warning: Failed to initialize Accelerate config: {e}")
+
 # Configure logging
 logging.set_verbosity_info()
 
@@ -36,10 +44,26 @@ else:
 
 class DreamBoothFluxHandler:
     def __init__(self):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Check GPU availability for RunPod environment
+        if torch.cuda.is_available():
+            self.device = "cuda"
+            print(f"✅ GPU detected: {torch.cuda.get_device_name(0)}")
+            print(f"   CUDA version: {torch.version.cuda}")
+            print(f"   GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+        else:
+            self.device = "cpu"
+            print("⚠️  No GPU detected, using CPU (not recommended for training)")
+        
         self.model_id = "black-forest-labs/FLUX.1-dev"  # FLUX model for DreamBooth Flux
         self.pipeline = None
         self.trained_model_path = None
+        
+        # Optional: Configure torch.compile for dramatic speedups (if supported)
+        self.enable_torch_compile = os.getenv("ENABLE_TORCH_COMPILE", "false").lower() == "true"
+        if self.enable_torch_compile and hasattr(torch, 'compile'):
+            print("🚀 Torch compile mode enabled for dramatic speedups")
+        elif self.enable_torch_compile:
+            print("⚠️  Torch compile requested but not available in this PyTorch version")
         
     def load_model(self, model_path: str = None):
         """Load the trained model or base model"""

@@ -70,11 +70,8 @@ RUN cd /workspace/diffusers/examples/dreambooth && pip install -r requirements_f
 # Return to workspace
 RUN cd /workspace
 
-# Initialize Accelerate with default configuration for non-interactive environment
-RUN accelerate config default
-
-# Install peft with correct version after diffusers requirements
-RUN pip install --no-cache-dir peft>=0.17.0
+# Install peft with correct version for LoRA training (>=0.6.0 as per README)
+RUN pip install --no-cache-dir peft>=0.6.0
 
 # Download dog example dataset for testing
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
