@@ -1,39 +1,4 @@
-# Core dependencies
-packaging==21.3
-setuptools==68.2.2
-wheel==0.41.2
-
-# Scientific computing
-numpy==1.23.5
-scipy==1.10.1
-
-# HTTP and utilities
-requests==2.31.0
-tqdm==4.66.1
-
-# Image processing
-Pillow==10.0.1
-
-# Hugging Face ecosystem
-transformers==4.35.0
-accelerate==0.24.1
-datasets==2.14.5
-huggingface-hub==0.17.3
-
-# Configuration and serialization
-safetensors==0.4.0
-omegaconf==2.3.0
-PyYAML==6.0.1
-
-# Additional dependencies for DreamBooth Flux
-ftfy==6.1.3
-regex==2023.8.8
-einops==0.7.0
-
-# Monitoring and logging
-tensorboard==2.14.0
-wandb==0.15.12
-
+# Essential FLUX DreamBooth dependencies (from requirements_flux.txt)
 accelerate>=0.31.0
 torchvision
 transformers>=4.41.2
@@ -43,3 +8,12 @@ Jinja2
 peft>=0.11.1
 sentencepiece
 prodigyopt
+
+# Minimal RunPod dependencies
+requests>=2.31.0
+Pillow>=10.0.1
+
+# Core Python dependencies
+packaging>=21.3
+setuptools>=68.2.2
+wheel>=0.41.2
