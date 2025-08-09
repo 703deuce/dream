@@ -33,13 +33,21 @@ WORKDIR /workspace
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip
+
+# Install PyTorch with CUDA support first
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install other dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install additional dependencies for better performance
+# Install additional performance optimizations
 RUN pip install --no-cache-dir \
     ninja \
     flash-attn \
     triton
+
+# Install diffusers from source for latest DreamBooth Flux support
+RUN pip install --no-cache-dir git+https://github.com/huggingface/diffusers.git
 
 # Copy application files
 COPY handler.py .

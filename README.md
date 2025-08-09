@@ -25,12 +25,26 @@ This implementation follows the [DreamBooth Flux](https://github.com/huggingface
 ### Quick Start for RunPod Serverless
 
 1. **Get API Keys**: See [RUNPOD_SETUP.md](RUNPOD_SETUP.md) for detailed setup instructions
-2. **Build & Deploy**: Run `deploy.bat` (Windows) or `deploy.sh` (Linux/Mac)
-3. **Configure RunPod**: Follow the setup guide to create your serverless endpoint
+2. **Setup Environment**: Run `python setup_accelerate.py` to configure dependencies and accelerate
+3. **Build & Deploy**: Run `deploy.bat` (Windows) or `deploy.sh` (Linux/Mac)
+4. **Configure RunPod**: Follow the setup guide to create your serverless endpoint
 
 ### Manual Setup
 
-#### 1. Build Docker Image
+#### 1. Install Dependencies
+
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install diffusers from source for latest DreamBooth Flux
+pip install git+https://github.com/huggingface/diffusers.git
+
+# Configure accelerate
+accelerate config default
+```
+
+#### 2. Build Docker Image
 
 ```bash
 docker build -t dreambooth-flux .
