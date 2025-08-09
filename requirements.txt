@@ -1,15 +1,5 @@
-# Essential FLUX DreamBooth dependencies (from requirements_flux.txt)
-accelerate>=0.31.0
-torchvision
-transformers>=4.41.2
-ftfy
-tensorboard
-Jinja2
-peft>=0.11.1
-sentencepiece
-prodigyopt
-
-# Minimal RunPod dependencies
+# Minimal RunPod dependencies only
+# (FLUX requirements will be installed by Dockerfile from local diffusers folder)
 requests>=2.31.0
 Pillow>=10.0.1
 

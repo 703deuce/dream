@@ -101,9 +101,9 @@ class DreamBoothFluxHandler:
                 self.download_images(image_urls, instance_data_dir)
             
             # Build command line arguments for FLUX DreamBooth training
-            cmd = [
-                sys.executable,  # Use current Python interpreter
-                "dreambooth_examples/train_dreambooth_flux.py",
+                             cmd = [
+                     sys.executable,  # Use current Python interpreter
+                     "diffusers/examples/dreambooth/train_dreambooth_flux.py",
                 "--pretrained_model_name_or_path", self.model_id,
                 "--instance_data_dir", instance_data_dir,
                 "--output_dir", output_dir,

@@ -58,13 +58,16 @@ RUN pip install --no-cache-dir prodigyopt
 # Install additional performance optimizations with exact versions
 RUN pip install --no-cache-dir ninja flash-attn==0.2.4 triton==2.0.0
 
-# Clone and install diffusers from source for latest DreamBooth Flux support
-RUN git clone https://github.com/huggingface/diffusers && \
-    cd diffusers && \
+# Install diffusers from local source for latest DreamBooth Flux support
+COPY diffusers/ ./diffusers/
+RUN cd diffusers && \
     pip install -e . && \
     cd examples/dreambooth && \
     pip install -r requirements_flux.txt && \
     cd /workspace
+
+# Initialize Accelerate with default configuration for non-interactive environment
+RUN accelerate config default
 
 # Install peft with correct version after diffusers requirements
 RUN pip install --no-cache-dir peft>=0.17.0
