@@ -5,7 +5,7 @@ wheel==0.41.2
 
 # Scientific computing
 numpy==1.24.3
-scipy==1.11.1
+scipy==1.11.4
 
 # HTTP and utilities
 requests==2.31.0
