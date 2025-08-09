@@ -64,8 +64,10 @@ RUN git clone https://github.com/huggingface/diffusers && \
     pip install -e . && \
     cd examples/dreambooth && \
     pip install -r requirements_flux.txt && \
-    pip install peft>=0.17.0 && \
     cd /workspace
+
+# Install peft with correct version after diffusers requirements
+RUN pip install --no-cache-dir peft>=0.17.0
 
 # Download dog example dataset for testing
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
