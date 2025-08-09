@@ -37,20 +37,23 @@ RUN pip install --no-cache-dir --upgrade pip
 # Install core dependencies first
 RUN pip install --no-cache-dir packaging setuptools wheel
 
-# Install PyTorch with CUDA support
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# Install PyTorch with CUDA support (pinned versions for compatibility)
+RUN pip install --no-cache-dir torch==2.0.1 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 # Install basic dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install performance optimizations separately
-RUN pip install --no-cache-dir xformers bitsandbytes
+# Install performance optimizations with exact versions
+RUN pip install --no-cache-dir xformers==0.0.20
+
+# Install bitsandbytes with exact version
+RUN pip install --no-cache-dir bitsandbytes==0.41.0
 
 # Install FLUX-specific dependencies
-RUN pip install --no-cache-dir prodigy-optimizer
+RUN pip install --no-cache-dir prodigy-optimizer==1.0.0
 
-# Install additional performance optimizations
-RUN pip install --no-cache-dir ninja flash-attn triton
+# Install additional performance optimizations with exact versions
+RUN pip install --no-cache-dir ninja flash-attn==0.2.4 triton==2.0.0
 
 # Clone and install diffusers from source for latest DreamBooth Flux support
 RUN git clone https://github.com/huggingface/diffusers && \
@@ -58,7 +61,7 @@ RUN git clone https://github.com/huggingface/diffusers && \
     pip install -e . && \
     cd examples/dreambooth && \
     pip install -r requirements_flux.txt && \
-    pip install peft>=0.6.0 && \
+    pip install peft==0.6.0 && \
     cd /workspace
 
 # Download dog example dataset for testing
