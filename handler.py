@@ -35,7 +35,7 @@ else:
 class DreamBoothFluxHandler:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model_id = "runwayml/stable-diffusion-v1-5"
+        self.model_id = "black-forest-labs/FLUX.1-dev"  # FLUX model for DreamBooth Flux
         self.pipeline = None
         self.trained_model_path = None
         
@@ -98,27 +98,24 @@ class DreamBoothFluxHandler:
             if image_urls:
                 self.download_images(image_urls, instance_data_dir)
             
-            # Training parameters for maximum likeness
+            # Training parameters for FLUX DreamBooth
             training_args = {
                 "pretrained_model_name_or_path": self.model_id,
                 "instance_data_dir": instance_data_dir,
                 "output_dir": output_dir,
                 "instance_prompt": instance_prompt,
                 "class_prompt": class_prompt,
-                "resolution": 512,
+                "resolution": 1024,  # FLUX uses 1024 resolution
                 "train_batch_size": 1,
-                "gradient_accumulation_steps": 1,
-                "max_train_steps": 800,
-                "learning_rate": 5e-6,
+                "gradient_accumulation_steps": 4,
+                "max_train_steps": 500,  # FLUX example uses 500 steps
+                "learning_rate": 1.0,  # FLUX uses 1.0 learning rate
                 "lr_scheduler": "constant",
                 "lr_warmup_steps": 0,
-                "train_text_encoder": True,  # Critical for facial likeness
-                "mixed_precision": "fp16",
-                "gradient_checkpointing": True,
-                "use_8bit_adam": True,
-                "seed": 42,
-                "num_class_images": 50,
-                "sample_batch_size": 4,
+                "mixed_precision": "bf16",  # FLUX uses bf16
+                "guidance_scale": 1,
+                "optimizer": "prodigy",  # FLUX uses Prodigy optimizer
+                "seed": 0,
                 "save_steps": 100,
                 "save_total_limit": 2,
             }
@@ -136,8 +133,8 @@ class DreamBoothFluxHandler:
             
             set_seed(training_args["seed"])
             
-            # Import and run training script
-            from train_dreambooth import main as train_main
+            # Import and run FLUX training script
+            from train_dreambooth_flux import main as train_main
             train_main(training_args, accelerator)
             
             return {

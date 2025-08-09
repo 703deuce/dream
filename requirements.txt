@@ -28,6 +28,9 @@ bitsandbytes>=0.41.0
 flash-attn>=2.0.0
 triton>=2.0.0
 
+# FLUX-specific dependencies
+prodigy-optimizer>=1.0.0
+
 # Monitoring and logging
 tensorboard>=2.13.0
 wandb>=0.15.0
