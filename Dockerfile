@@ -34,7 +34,10 @@ WORKDIR /workspace
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip
 
-# Install PyTorch with CUDA support first
+# Install core dependencies first
+RUN pip install --no-cache-dir packaging setuptools wheel
+
+# Install PyTorch with CUDA support
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install other dependencies
