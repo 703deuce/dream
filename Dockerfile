@@ -60,11 +60,15 @@ RUN pip install --no-cache-dir ninja flash-attn==0.2.4 triton==2.0.0
 
 # Install diffusers from local source for latest DreamBooth Flux support
 COPY diffusers/ ./diffusers/
-RUN cd diffusers && \
-    pip install -e . && \
-    cd examples/dreambooth && \
-    pip install -r requirements_flux.txt && \
-    cd /workspace
+
+# Go to /workspace/diffusers/ and run pip install -e .
+RUN cd /workspace/diffusers && pip install -e .
+
+# Then cd in the example folder /workspace/diffusers/dreambooth/ and run pip install -r requirements_flux.txt
+RUN cd /workspace/diffusers/examples/dreambooth && pip install -r requirements_flux.txt
+
+# Return to workspace
+RUN cd /workspace
 
 # Initialize Accelerate with default configuration for non-interactive environment
 RUN accelerate config default
