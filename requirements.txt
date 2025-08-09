@@ -4,8 +4,8 @@ setuptools==68.2.2
 wheel==0.41.2
 
 # Scientific computing
-numpy==1.24.3
-scipy==1.11.4
+numpy==1.23.5
+scipy==1.10.1
 
 # HTTP and utilities
 requests==2.31.0
@@ -13,7 +13,6 @@ tqdm==4.66.1
 
 # Image processing
 Pillow==10.0.1
-opencv-python==4.8.0.76
 
 # Hugging Face ecosystem
 transformers==4.35.0

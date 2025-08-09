@@ -7,10 +7,10 @@ ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 
-# Install system dependencies (Python 3.9 required for scipy 1.11.x compatibility)
+# Install system dependencies (Python 3.8 with compatible numpy/scipy versions)
 RUN apt-get update && apt-get install -y \
-    python3.9 \
-    python3.9-dev \
+    python3.8 \
+    python3.8-dev \
     python3-pip \
     git \
     wget \
@@ -25,9 +25,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create symbolic link for python
-RUN ln -s /usr/bin/python3.9 /usr/bin/python
+RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
-# Verify Python version (required for scipy 1.11.x compatibility)
+# Verify Python version
 RUN python --version
 
 # Set working directory
