@@ -64,7 +64,7 @@ RUN git clone https://github.com/huggingface/diffusers && \
     pip install -e . && \
     cd examples/dreambooth && \
     pip install -r requirements_flux.txt && \
-    pip install peft==0.6.0 && \
+    pip install peft>=0.17.0 && \
     cd /workspace
 
 # Download dog example dataset for testing

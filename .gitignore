@@ -66,6 +66,10 @@ temp/
 test_*.png
 generated_*.png
 
+# Test files with API keys
+test_*.py
+check_job.py
+
 # Model checkpoints and outputs
 /tmp/
 dreambooth_output/
