@@ -4,7 +4,7 @@ torchvision>=0.15.0
 torchaudio>=2.0.0
 
 # Hugging Face ecosystem
-diffusers>=0.21.0
+# Note: diffusers is installed from source for DreamBooth Flux
 transformers>=4.30.0
 accelerate>=0.20.0
 datasets>=2.12.0

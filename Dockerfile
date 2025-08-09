@@ -46,8 +46,13 @@ RUN pip install --no-cache-dir \
     flash-attn \
     triton
 
-# Install diffusers from source for latest DreamBooth Flux support
-RUN pip install --no-cache-dir git+https://github.com/huggingface/diffusers.git
+# Clone and install diffusers from source for latest DreamBooth Flux support
+RUN git clone https://github.com/huggingface/diffusers && \
+    cd diffusers && \
+    pip install -e . && \
+    cd examples/dreambooth && \
+    pip install -r requirements_flux.txt && \
+    cd /workspace
 
 # Copy application files
 COPY handler.py .

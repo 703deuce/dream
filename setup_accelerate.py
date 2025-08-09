@@ -68,6 +68,30 @@ use_cpu: false
         print("❌ Accelerate configuration test failed")
         return False
 
+def install_diffusers_from_source():
+    """Install diffusers from source as recommended for DreamBooth Flux"""
+    print("\n📦 Installing diffusers from source...")
+    print("=" * 40)
+    
+    # Remove existing diffusers installation if it exists
+    if run_command("pip uninstall diffusers -y", "Removing existing diffusers installation"):
+        print("✅ Removed existing diffusers installation")
+    
+    # Clone diffusers repository
+    if not run_command("git clone https://github.com/huggingface/diffusers", "Cloning diffusers repository"):
+        return False
+    
+    # Change to diffusers directory and install in editable mode
+    if not run_command("cd diffusers && pip install -e .", "Installing diffusers in editable mode"):
+        return False
+    
+    # Install DreamBooth Flux requirements
+    if not run_command("cd diffusers/examples/dreambooth && pip install -r requirements_flux.txt", "Installing DreamBooth Flux requirements"):
+        return False
+    
+    print("✅ Diffusers installed from source successfully")
+    return True
+
 def install_dependencies():
     """Install required dependencies"""
     print("\n📦 Installing dependencies...")
@@ -77,8 +101,8 @@ def install_dependencies():
     if not run_command("pip install -r requirements.txt", "Installing Python dependencies"):
         return False
     
-    # Install diffusers from source for latest DreamBooth Flux
-    if not run_command("pip install git+https://github.com/huggingface/diffusers.git", "Installing diffusers from source"):
+    # Install diffusers from source
+    if not install_diffusers_from_source():
         return False
     
     return True

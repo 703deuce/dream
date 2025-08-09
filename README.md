@@ -37,8 +37,13 @@ This implementation follows the [DreamBooth Flux](https://github.com/huggingface
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install diffusers from source for latest DreamBooth Flux
-pip install git+https://github.com/huggingface/diffusers.git
+# Clone and install diffusers from source for latest DreamBooth Flux
+git clone https://github.com/huggingface/diffusers
+cd diffusers
+pip install -e .
+cd examples/dreambooth
+pip install -r requirements_flux.txt
+cd ../..
 
 # Configure accelerate
 accelerate config default
