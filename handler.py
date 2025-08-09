@@ -65,6 +65,8 @@ class DreamBoothFluxHandler:
         elif self.enable_torch_compile:
             print("⚠️  Torch compile requested but not available in this PyTorch version")
         
+        print("🎯 Training mode: Full fine-tuning (UNet + Text Encoder) for maximum likeness - NOT LoRA")
+        
     def load_model(self, model_path: str = None):
         """Load the trained model or base model"""
         if model_path and os.path.exists(model_path):
@@ -124,8 +126,9 @@ class DreamBoothFluxHandler:
             if image_urls:
                 self.download_images(image_urls, instance_data_dir)
             
-            # Build command line arguments for FLUX DreamBooth training
-                             cmd = [
+            # Build command line arguments for FLUX DreamBooth FULL FINE-TUNING (not LoRA)
+            # This trains both UNet and Text Encoder for maximum likeness
+            cmd = [
                      sys.executable,  # Use current Python interpreter
                      "diffusers/examples/dreambooth/train_dreambooth_flux.py",
                 "--pretrained_model_name_or_path", self.model_id,
