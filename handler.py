@@ -13,10 +13,8 @@ import tempfile
 import shutil
 from pathlib import Path
 from huggingface_hub import login as hf_login
+import subprocess
 import sys
-
-# Add the dreambooth_examples directory to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'dreambooth_examples'))
 
 # Configure logging
 logging.set_verbosity_info()
@@ -85,7 +83,7 @@ class DreamBoothFluxHandler:
         return image_paths
     
     def train_dreambooth(self, job_input: Dict[str, Any]) -> Dict[str, Any]:
-        """Train DreamBooth model with full fine-tuning for maximum likeness"""
+        """Train DreamBooth model using command line script for maximum likeness"""
         try:
             # Extract training parameters
             instance_prompt = job_input.get("instance_prompt", "a photo of sks person")
@@ -102,74 +100,76 @@ class DreamBoothFluxHandler:
             if image_urls:
                 self.download_images(image_urls, instance_data_dir)
             
-            # Training parameters for FLUX DreamBooth - OPTIMIZED FOR MAXIMUM LIKENESS
-            training_args = {
-                "pretrained_model_name_or_path": self.model_id,
-                "instance_data_dir": instance_data_dir,
-                "output_dir": output_dir,
-                "instance_prompt": instance_prompt,
-                "class_prompt": class_prompt,
-                "resolution": 1024,  # FLUX uses 1024 resolution for best quality
-                "train_batch_size": 1,
-                "gradient_accumulation_steps": 4,
-                "max_train_steps": 1000,  # Increased for better likeness
-                "learning_rate": 1.0,  # FLUX uses 1.0 learning rate with Prodigy
-                "lr_scheduler": "constant",
-                "lr_warmup_steps": 0,
-                "mixed_precision": "bf16",  # FLUX uses bf16
-                "guidance_scale": 1,
-                "optimizer": "prodigy",  # Prodigy optimizer for best results
-                "seed": 0,
-                "save_steps": 100,
-                "save_total_limit": 3,  # Keep more checkpoints for blending
-                "validation_prompt": instance_prompt,  # Validate with instance prompt
-                "validation_epochs": 25,  # Regular validation
-                "num_validation_images": 4,
-                "report_to": "tensorboard",  # Use tensorboard for logging
-                "train_text_encoder": True,  # CRITICAL: Train text encoder for best likeness
-                "max_sequence_length": 512,  # Support longer prompts
-                "gradient_checkpointing": True,  # Memory optimization
-                "cache_latents": True,  # Memory optimization
-                "aspect_ratio_buckets": "672,1568;688,1504;720,1456;752,1392;800,1328;832,1248;880,1184;944,1104;1024,1024;1104,944;1184,880;1248,832;1328,800;1392,752;1456,720;1504,688;1568,672"  # Support different aspect ratios
-            }
+            # Build command line arguments for FLUX DreamBooth training
+            cmd = [
+                sys.executable,  # Use current Python interpreter
+                "dreambooth_examples/train_dreambooth_flux.py",
+                "--pretrained_model_name_or_path", self.model_id,
+                "--instance_data_dir", instance_data_dir,
+                "--output_dir", output_dir,
+                "--instance_prompt", instance_prompt,
+                "--class_prompt", class_prompt,
+                "--resolution", "1024",  # FLUX uses 1024 resolution for best quality
+                "--train_batch_size", "1",
+                "--gradient_accumulation_steps", "4",
+                "--max_train_steps", "1000",  # Increased for better likeness
+                "--learning_rate", "1.0",  # FLUX uses 1.0 learning rate with Prodigy
+                "--lr_scheduler", "constant",
+                "--lr_warmup_steps", "0",
+                "--mixed_precision", "bf16",  # FLUX uses bf16
+                "--guidance_scale", "1",
+                "--optimizer", "prodigy",  # Prodigy optimizer for best results
+                "--seed", "0",
+                "--save_steps", "100",
+                "--save_total_limit", "3",  # Keep more checkpoints for blending
+                "--validation_prompt", instance_prompt,  # Validate with instance prompt
+                "--validation_epochs", "25",  # Regular validation
+                "--num_validation_images", "4",
+                "--report_to", "tensorboard",  # Use tensorboard for logging
+                "--train_text_encoder",  # CRITICAL: Train text encoder for best likeness
+                "--max_sequence_length", "512",  # Support longer prompts
+                "--gradient_checkpointing",  # Memory optimization
+                "--cache_latents",  # Memory optimization
+                "--aspect_ratio_buckets", "672,1568;688,1504;720,1456;752,1392;800,1328;832,1248;880,1184;944,1104;1024,1024;1104,944;1184,880;1248,832;1328,800;1392,752;1456,720;1504,688;1568,672"  # Support different aspect ratios
+            ]
             
-            # Import the local FLUX training script
-            try:
-                from train_dreambooth_flux import main as train_main
-                print("✅ Successfully imported local FLUX training script")
-            except ImportError as e:
-                print(f"❌ Failed to import local FLUX training script: {e}")
-                return {
-                    "status": "error",
-                    "message": f"Failed to import local training script: {str(e)}"
-                }
-            
-            # Create a mock args object that mimics argparse.Namespace
-            class MockArgs:
-                def __init__(self, **kwargs):
-                    for key, value in kwargs.items():
-                        setattr(self, key, value)
-            
-            # Convert training args to MockArgs object
-            args = MockArgs(**training_args)
-            
-            # Run training using the local FLUX script
             print("🚀 Starting FLUX DreamBooth training with maximum likeness settings...")
             print(f"📸 Training on {len(os.listdir(instance_data_dir))} images")
             print(f"🎯 Instance prompt: {instance_prompt}")
-            print(f"🔧 Training text encoder: {training_args['train_text_encoder']}")
-            print(f"📏 Resolution: {training_args['resolution']}")
-            print(f"⚡ Optimizer: {training_args['optimizer']}")
+            print(f"🔧 Training text encoder: True")
+            print(f"📏 Resolution: 1024")
+            print(f"⚡ Optimizer: prodigy")
+            print(f"🖥️  Command: {' '.join(cmd)}")
             
-            train_main(args)
+            # Run the training command
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=os.getcwd()  # Run from current directory
+            )
             
-            return {
-                "status": "success",
-                "message": "FLUX DreamBooth training completed successfully with maximum likeness settings",
-                "output_dir": output_dir,
-                "model_path": output_dir,
-                "training_config": training_args
-            }
+            if result.returncode == 0:
+                print("✅ Training completed successfully!")
+                return {
+                    "status": "success",
+                    "message": "FLUX DreamBooth training completed successfully with maximum likeness settings",
+                    "output_dir": output_dir,
+                    "model_path": output_dir,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr
+                }
+            else:
+                print(f"❌ Training failed with return code {result.returncode}")
+                print(f"STDOUT: {result.stdout}")
+                print(f"STDERR: {result.stderr}")
+                return {
+                    "status": "error",
+                    "message": f"Training failed with return code {result.returncode}",
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "return_code": result.returncode
+                }
             
         except Exception as e:
             return {
