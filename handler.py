@@ -88,6 +88,8 @@ class DreamBoothFluxHandler:
         
         print("🎯 Training mode: Full fine-tuning (UNet + Text Encoder) for maximum likeness - NOT LoRA")
         print("💾 Memory optimization: bitsandbytes 8-bit optimizer + gradient checkpointing supported")
+        print("📚 Note: For AdamW optimizer, use --use_8bit_adam flag (not needed with Prodigy)")
+        print("🐕 Dog example dataset available at /workspace/dog (from FLUX README)")
         
     def load_model(self, model_path: str = None):
         """Load the trained model or base model"""
@@ -150,37 +152,39 @@ class DreamBoothFluxHandler:
             
             # Build command line arguments for FLUX DreamBooth FULL FINE-TUNING (not LoRA)
             # This trains both UNet and Text Encoder for maximum likeness
+            # Based on official FLUX README: https://github.com/huggingface/diffusers/tree/main/examples/dreambooth
             cmd = [
-                     sys.executable,  # Use current Python interpreter
-                     "diffusers/examples/dreambooth/train_dreambooth_flux.py",
+                sys.executable,  # Use current Python interpreter
+                "diffusers/examples/dreambooth/train_dreambooth_flux.py",
                 "--pretrained_model_name_or_path", self.model_id,
                 "--instance_data_dir", instance_data_dir,
                 "--output_dir", output_dir,
+                "--mixed_precision", "bf16",  # FLUX uses bf16
                 "--instance_prompt", instance_prompt,
-                "--class_prompt", class_prompt,
                 "--resolution", "1024",  # FLUX uses 1024 resolution for best quality
                 "--train_batch_size", "1",
+                "--guidance_scale", "1",
                 "--gradient_accumulation_steps", "4",
-                "--max_train_steps", "1000",  # Increased for better likeness
-                "--learning_rate", "1.0",  # FLUX uses 1.0 learning rate with Prodigy
+                "--optimizer", "prodigy",  # Prodigy optimizer for best results (recommended)
+                "--learning_rate", "1.",  # FLUX uses 1.0 learning rate with Prodigy
+                "--report_to", "tensorboard",  # Use tensorboard for logging (wandb requires login)
                 "--lr_scheduler", "constant",
                 "--lr_warmup_steps", "0",
-                "--mixed_precision", "bf16",  # FLUX uses bf16
-                "--guidance_scale", "1",
-                "--optimizer", "prodigy",  # Prodigy optimizer for best results
-                "--seed", "0",
-                "--save_steps", "100",
-                "--save_total_limit", "3",  # Keep more checkpoints for blending
+                "--max_train_steps", "1000",  # Increased for better likeness
                 "--validation_prompt", instance_prompt,  # Validate with instance prompt
                 "--validation_epochs", "25",  # Regular validation
-                "--num_validation_images", "4",
-                "--report_to", "tensorboard",  # Use tensorboard for logging
+                "--seed", "0",
                 "--train_text_encoder",  # CRITICAL: Train text encoder for best likeness
-                "--max_sequence_length", "512",  # Support longer prompts
-                "--gradient_checkpointing",  # Memory optimization
+                "--gradient_checkpointing",  # Memory optimization for 16GB GPU support
                 "--cache_latents",  # Memory optimization
                 "--aspect_ratio_buckets", "672,1568;688,1504;720,1456;752,1392;800,1328;832,1248;880,1184;944,1104;1024,1024;1104,944;1184,880;1248,832;1328,800;1392,752;1456,720;1504,688;1568,672"  # Support different aspect ratios
             ]
+            
+            # Optional: Add 8-bit Adam optimizer support for memory efficiency
+            # Note: Only needed if using AdamW optimizer (not Prodigy)
+            if job_input.get("use_8bit_adam", False):
+                cmd.extend(["--use_8bit_adam"])
+                print("💾 8-bit Adam optimizer enabled for memory efficiency")
             
             print("🚀 Starting FLUX DreamBooth training with maximum likeness settings...")
             print(f"📸 Training on {len(os.listdir(instance_data_dir))} images")
