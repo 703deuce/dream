@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+
 import subprocess
 import logging
 from typing import Dict, Any
@@ -23,6 +24,7 @@ def check_gpu_health():
                 logger.info(f"GPU {i}: {gpu}")
             return True
         else:
+
             logger.error(f"GPU Health Check Failed: {result.stderr}")
             return False
             
@@ -107,6 +109,7 @@ def start_training_directly(
             print(f"❌ Training failed with return code: {result.returncode}")
             print(f"Error output: {result.stderr}")
             return {
+
                 "success": False,
                 "status": "failed",
                 "error": f"Training failed with return code {result.returncode}",
