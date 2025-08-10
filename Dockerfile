@@ -70,14 +70,14 @@ RUN python -m pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
 # Copy the entire dream repository structure
 COPY . .
 
-# Debug: Check what's in the dream/diffusers folder
-RUN ls -la /workspace/dream/diffusers/
+# Debug: Check what's in the diffusers folder
+RUN ls -la /workspace/diffusers/
 
-# Go to /workspace/dream/diffusers/ and run pip install -e .
-RUN cd /workspace/dream/diffusers && python -m pip install -e .
+# Go to /workspace/diffusers/ and run pip install -e .
+RUN cd /workspace/diffusers && python -m pip install -e .
 
-# Then cd in the example folder /workspace/dream/diffusers/examples/dreambooth/ and run pip install -r requirements_flux.txt
-RUN cd /workspace/dream/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
+# Then cd in the example folder /workspace/diffusers/examples/dreambooth/ and run pip install -r requirements_flux.txt
+RUN cd /workspace/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
 
 # Return to workspace
 RUN cd /workspace
