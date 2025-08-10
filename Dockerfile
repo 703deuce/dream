@@ -46,6 +46,7 @@ RUN python -m pip uninstall -y torch torchvision torchaudio || true
 # Use compatible versions: torch 2.1.0+, torchvision 0.16.0+, torchaudio 2.1.0+
 # All packages must use the same CUDA version to avoid compatibility issues
 # Using --force-reinstall to ensure clean installation and prevent version conflicts
+# Note: Using PyTorch 2.1.0+ for Accelerate compatibility (device_mesh support)
 RUN python -m pip install --force-reinstall --no-cache-dir "torch>=2.1.0" "torchvision>=0.16.0" "torchaudio>=2.1.0" --extra-index-url https://download.pytorch.org/whl/cu118
 
 
@@ -63,7 +64,8 @@ RUN python -m pip uninstall -y transformers || true
 RUN python -m pip cache purge
 
 # Install performance optimizations (compatible with PyTorch 2.1.0+)
-RUN python -m pip install --no-cache-dir xformers>=0.0.20
+# Use specific versions that work with Ubuntu 20.04 (glibc 2.31) and PyTorch 2.1.0+
+RUN python -m pip install --no-cache-dir xformers==0.0.20
 
 # Install bitsandbytes for 8-bit optimizer support (latest stable version)
 RUN python -m pip install --no-cache-dir bitsandbytes>=0.46.0
@@ -71,10 +73,11 @@ RUN python -m pip install --no-cache-dir bitsandbytes>=0.46.0
 # Install FLUX-specific dependencies
 RUN python -m pip install --no-cache-dir prodigyopt
 
-# Install additional performance optimizations (compatible versions for PyTorch 2.1.0+)
+# Install additional performance optimizations (compatible versions for Ubuntu 20.04)
 RUN python -m pip install --no-cache-dir ninja
-RUN python -m pip install --no-cache-dir 'triton>=2.0.0'
-RUN python -m pip install --no-cache-dir 'flash-attn>=0.2.4'
+RUN python -m pip install --no-cache-dir 'triton>=2.0.0,<2.1.0'
+# Use flash-attn 2.7.4.post1 which is compatible with glibc 2.31 (Ubuntu 20.04)
+RUN python -m pip install --no-cache-dir 'flash-attn==2.7.4.post1'
 
 # Install diffusers from local source for latest DreamBooth Flux support
 # Copy the entire dream repository structure
