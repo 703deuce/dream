@@ -89,7 +89,7 @@ class DreamBoothFluxHandler:
         print("🎯 Training mode: Full fine-tuning (UNet + Text Encoder) for maximum likeness - NOT LoRA")
         print("💾 Memory optimization: bitsandbytes 8-bit optimizer + gradient checkpointing supported")
         print("📚 Note: For AdamW optimizer, use --use_8bit_adam flag (not needed with Prodigy)")
-        print("🐕 Dog example dataset available at /workspace/dog (from FLUX README)")
+        print("🐕 Dog example dataset available at /workspace/dream/dog (from FLUX README)")
         
     def load_model(self, model_path: str = None):
         """Load the trained model or base model"""

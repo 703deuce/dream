@@ -67,16 +67,17 @@ RUN python -m pip install --no-cache-dir 'triton>=2.0.0,<2.1.0'
 RUN python -m pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
 
 # Install diffusers from local source for latest DreamBooth Flux support
-COPY diffusers/ ./diffusers/
+# Copy the entire dream repository structure
+COPY . .
 
-# Debug: Check what's in the diffusers folder
-RUN ls -la /workspace/diffusers/
+# Debug: Check what's in the dream/diffusers folder
+RUN ls -la /workspace/dream/diffusers/
 
-# Go to /workspace/diffusers/ and run pip install -e .
-RUN cd /workspace/diffusers && python -m pip install -e .
+# Go to /workspace/dream/diffusers/ and run pip install -e .
+RUN cd /workspace/dream/diffusers && python -m pip install -e .
 
-# Then cd in the example folder /workspace/diffusers/dreambooth/ and run pip install -r requirements_flux.txt
-RUN cd /workspace/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
+# Then cd in the example folder /workspace/dream/diffusers/examples/dreambooth/ and run pip install -r requirements_flux.txt
+RUN cd /workspace/dream/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
 
 # Return to workspace
 RUN cd /workspace
@@ -84,7 +85,7 @@ RUN cd /workspace
 # Note: We're doing full fine-tuning, not LoRA, so PEFT is not needed
 
 # Download dog example dataset for testing (from FLUX README)
-RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dream/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
 
 # Copy application files
 COPY handler.py .
