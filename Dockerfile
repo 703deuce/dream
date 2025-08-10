@@ -43,7 +43,13 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir packaging setuptools wheel
 
 # Install PyTorch with CUDA support (PyTorch 2.2+ for bitsandbytes compatibility)
-RUN pip install --no-cache-dir torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+# Use compatible versions: torch 2.2.1, torchvision 0.17.1, torchaudio 2.2.1
+RUN pip install --no-cache-dir torch==2.2.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+RUN pip install --no-cache-dir torchvision==0.17.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+RUN pip install --no-cache-dir torchaudio==2.2.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+
+# Verify PyTorch installation and CUDA compatibility
+RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}')"
 
 # Install basic dependencies
 RUN pip install --no-cache-dir -r requirements.txt
