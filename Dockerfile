@@ -37,43 +37,43 @@ WORKDIR /workspace
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip
+RUN python -m pip install --no-cache-dir --upgrade pip
 
 # Install core dependencies first
-RUN pip install --no-cache-dir packaging setuptools wheel
+RUN python -m pip install --no-cache-dir packaging setuptools wheel
 
 # Install PyTorch with CUDA support (confirmed compatible versions for CUDA 11.8)
 # Use compatible versions: torch 2.0.1, torchvision 0.15.2, torchaudio 2.0.2
-RUN pip install --no-cache-dir torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+RUN python -m pip install --no-cache-dir torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
 # Verify PyTorch installation and CUDA compatibility
 RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}')"
 
 # Install basic dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt
 
 # Install performance optimizations (compatible with PyTorch 2.0.1)
-RUN pip install --no-cache-dir xformers==0.0.20
+RUN python -m pip install --no-cache-dir xformers==0.0.20
 
 # Install bitsandbytes for 8-bit optimizer support (latest stable version)
-RUN pip install --no-cache-dir bitsandbytes>=0.46.0
+RUN python -m pip install --no-cache-dir bitsandbytes>=0.46.0
 
 # Install FLUX-specific dependencies
-RUN pip install --no-cache-dir prodigyopt
+RUN python -m pip install --no-cache-dir prodigyopt
 
 # Install additional performance optimizations (compatible versions for PyTorch 2.0.1)
-RUN pip install --no-cache-dir ninja
-RUN pip install --no-cache-dir 'triton>=2.0.0,<2.1.0'
-RUN pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
+RUN python -m pip install --no-cache-dir ninja
+RUN python -m pip install --no-cache-dir 'triton>=2.0.0,<2.1.0'
+RUN python -m pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
 
 # Install diffusers from local source for latest DreamBooth Flux support
 COPY diffusers/ ./diffusers/
 
 # Go to /workspace/diffusers/ and run pip install -e .
-RUN cd /workspace/diffusers && pip install -e .
+RUN cd /workspace/diffusers && python -m pip install -e .
 
 # Then cd in the example folder /workspace/diffusers/dreambooth/ and run pip install -r requirements_flux.txt
-RUN cd /workspace/diffusers/examples/dreambooth && pip install -r requirements_flux.txt
+RUN cd /workspace/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
 
 # Return to workspace
 RUN cd /workspace
