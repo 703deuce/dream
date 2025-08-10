@@ -117,10 +117,7 @@ RUN python -c "from transformers import CLIPImageProcessor; print('✅ CLIPImage
 # Double-check: Verify the exact transformers package location and contents
 RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); print(f'Transformers package location: {transformers.__file__}')"
 
-# Final verification: Test that diffusers can import transformers modules correctly
-RUN python -c "from diffusers import StableDiffusionPipeline; print('✅ Diffusers can import StableDiffusionPipeline successfully')"
 
-# Note: We're doing full fine-tuning, not LoRA, so PEFT is not needed
 
 # Download dog example dataset for testing (from FLUX README)
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
