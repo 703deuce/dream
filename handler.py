@@ -62,7 +62,7 @@ def start_training_directly(
         
         # Prepare the training command
         training_command = f"""
-        cd /workspace/diffusers/dreambooth && \\
+        cd /workspace/diffusers/examples/dreambooth && \\
         python run_training.py \\
         --instance_prompt "{instance_prompt}" \\
         --max_train_steps {max_train_steps} \\
