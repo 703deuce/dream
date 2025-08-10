@@ -77,7 +77,7 @@ instance_data/
 class_data/
 
 # Docker
-.dockerignore
+# .dockerignore (removed to allow tracking)
 
 # RunPod specific
 runpod_logs/
