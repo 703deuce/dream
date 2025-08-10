@@ -79,13 +79,16 @@ RUN cd /workspace/diffusers && python -m pip install -e .
 # Then cd in the example folder /workspace/diffusers/examples/dreambooth/ and run pip install -r requirements_flux.txt
 RUN cd /workspace/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
 
+# Install additional required dependencies for CLIP and transformers
+RUN python -m pip install --no-cache-dir transformers[torch]>=4.35.0
+
 # Return to workspace
 RUN cd /workspace
 
 # Note: We're doing full fine-tuning, not LoRA, so PEFT is not needed
 
 # Download dog example dataset for testing (from FLUX README)
-RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dream/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
 
 # Copy application files
 COPY handler.py .
