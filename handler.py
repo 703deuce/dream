@@ -63,13 +63,24 @@ def start_training_directly(
         # Prepare the training command
         training_command = f"""
         cd /workspace/diffusers/examples/dreambooth && \\
-        python run_training.py \\
+        python train_dreambooth_flux.py \\
+        --pretrained_model_name_or_path "black-forest-labs/FLUX.1-dev" \\
+        --instance_data_dir "/workspace/dog" \\
+        --output_dir "/workspace/trained-flux" \\
+        --mixed_precision "bf16" \\
         --instance_prompt "{instance_prompt}" \\
-        --max_train_steps {max_train_steps} \\
         --resolution {resolution} \\
-        --learning_rate {learning_rate} \\
         --train_batch_size {train_batch_size} \\
-        --gradient_accumulation_steps {gradient_accumulation_steps}
+        --guidance_scale 1 \\
+        --gradient_accumulation_steps {gradient_accumulation_steps} \\
+        --optimizer "prodigy" \\
+        --learning_rate {learning_rate} \\
+        --lr_scheduler "constant" \\
+        --lr_warmup_steps 0 \\
+        --max_train_steps {max_train_steps} \\
+        --validation_prompt "A photo of {instance_prompt} in a bucket" \\
+        --validation_epochs 25 \\
+        --seed 0
         """
         
         print(f"🔧 Executing command: {training_command}")
