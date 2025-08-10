@@ -52,6 +52,10 @@ RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); pri
 # Install basic dependencies
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
+# Clean up any potential conflicting packages and ensure clean environment
+RUN python -m pip uninstall -y transformers || true
+RUN python -m pip cache purge
+
 # Install performance optimizations (compatible with PyTorch 2.0.1)
 RUN python -m pip install --no-cache-dir xformers==0.0.20
 
@@ -84,10 +88,17 @@ RUN cd /workspace
 
 # Install additional required dependencies for CLIP and transformers AFTER requirements_flux.txt
 # This ensures we get the latest transformers version (>=4.41.2) from requirements_flux.txt
-RUN python -m pip install --no-cache-dir --upgrade transformers
+# Use force-reinstall to avoid any corrupted installations
+RUN python -m pip install --upgrade --force-reinstall "transformers>=4.41.2"
 
 # Verify transformers installation and CLIP modules availability
-RUN python -c "from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer; print('✅ CLIP modules imported successfully'); print(f'Transformers version: {transformers.__version__}')"
+RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer; print('✅ CLIP modules imported successfully')"
+
+# Double-check: Verify the exact transformers package location and contents
+RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); print(f'Transformers package location: {transformers.__file__}')"
+
+# Final verification: Test that diffusers can import transformers modules correctly
+RUN python -c "from diffusers import StableDiffusionPipeline; print('✅ Diffusers can import StableDiffusionPipeline successfully')"
 
 # Note: We're doing full fine-tuning, not LoRA, so PEFT is not needed
 
