@@ -29,9 +29,6 @@ RUN apt-get update && apt-get install -y \
 # Create symbolic link for python
 RUN ln -s /usr/bin/python3.9 /usr/bin/python
 
-# Verify Python version
-RUN python --version
-
 # Set working directory
 WORKDIR /workspace
 
@@ -83,9 +80,6 @@ RUN python -m pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
 # Copy the entire dream repository structure
 COPY . .
 
-# Debug: Check what's in the diffusers folder
-RUN ls -la /workspace/diffusers/
-
 # Go to /workspace/diffusers/ and run pip install -e .
 RUN cd /workspace/diffusers && python -m pip install -e .
 
@@ -105,17 +99,6 @@ RUN python -m pip install --no-cache-dir "clip @ git+https://github.com/openai/C
 
 # Install a specific transformers version known to have all CLIP modules
 RUN python -m pip install --no-cache-dir "transformers==4.42.0"
-
-# Verify transformers installation and CLIP modules availability
-RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); print('Available CLIP modules:'); import inspect; [print(f'  {name}') for name in dir(transformers) if 'CLIP' in name]"
-
-# Try importing CLIP modules individually to identify which ones are missing
-RUN python -c "from transformers import CLIPTextModel; print('✅ CLIPTextModel imported successfully')" || echo "❌ CLIPTextModel import failed"
-RUN python -c "from transformers import CLIPTokenizer; print('✅ CLIPTokenizer imported successfully')" || echo "❌ CLIPTokenizer import failed"
-RUN python -c "from transformers import CLIPImageProcessor; print('✅ CLIPImageProcessor imported successfully')" || echo "❌ CLIPImageProcessor import failed"
-
-# Double-check: Verify the exact transformers package location and contents
-RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); print(f'Transformers package location: {transformers.__file__}')"
 
 
 
