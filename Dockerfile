@@ -71,9 +71,6 @@ RUN pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
 # Install diffusers from local source for latest DreamBooth Flux support
 COPY diffusers/ ./diffusers/
 
-# Verify diffusers folder structure
-RUN ls -la /workspace/diffusers/
-
 # Go to /workspace/diffusers/ and run pip install -e .
 RUN cd /workspace/diffusers && pip install -e .
 
