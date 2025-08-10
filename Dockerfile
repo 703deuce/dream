@@ -42,10 +42,14 @@ RUN python -m pip install --no-cache-dir --upgrade pip
 # Install core dependencies first
 RUN python -m pip install --no-cache-dir packaging setuptools wheel
 
-# Install PyTorch with CUDA support (confirmed compatible versions for CUDA 11.7)
+# Clean up any existing PyTorch packages to prevent version conflicts
+RUN python -m pip uninstall -y torch torchvision torchaudio || true
+
+# Install PyTorch with CUDA support (confirmed compatible versions for CUDA 11.8)
 # Use compatible versions: torch 2.0.1, torchvision 0.15.2, torchaudio 2.0.2
 # All packages must use the same CUDA version to avoid compatibility issues
-RUN python -m pip install --no-cache-dir torch==2.0.1+cu117 torchvision==0.15.2+cu117 torchaudio==2.0.2+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
+# Using --force-reinstall to ensure clean installation and prevent version conflicts
+RUN python -m pip install --force-reinstall --no-cache-dir torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
 # Verify PyTorch installation and CUDA compatibility
 RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}')"
