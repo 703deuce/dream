@@ -61,14 +61,15 @@ RUN python -c "import torchvision; print(f'Torchvision version: {torchvision.__v
 RUN python -c "import torchaudio; print(f'Torchaudio version: {torchaudio.__version__}'); print(f'Torchaudio CUDA version: {torchaudio.version.cuda}')"
 
 # Verify NumPy version compatibility
-RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}'); print('✅ NumPy version is compatible with PyTorch 2.0.1')"
+RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}'); assert numpy.__version__ == '1.26.4', f'Expected NumPy 1.26.4, got {numpy.__version__}'; print('✅ NumPy 1.26.4 is compatible with PyTorch 2.0.1')"
 
 # Install basic dependencies
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 # Fix NumPy version compatibility with PyTorch 2.0.1
 # PyTorch 2.0.1 was compiled with NumPy 1.x, so we need to use a compatible version
-RUN python -m pip install --no-cache-dir "numpy<2.0.0"
+# Use numpy==1.26.4 which is tested and known to work with PyTorch 2.x and CUDA 11.8
+RUN python -m pip install --force-reinstall --no-cache-dir "numpy==1.26.4"
 
 # Clean up any potential conflicting packages and ensure clean environment
 RUN python -m pip uninstall -y transformers || true
