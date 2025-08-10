@@ -69,6 +69,12 @@ generated_*.png
 # Test files with API keys
 test_*.py
 check_job.py
+test_api.py
+test_runpod_api.py
+test_dog_example.py
+test_dreambooth_import.py
+test_simple.py
+setup_accelerate.py
 
 # Model checkpoints and outputs
 /tmp/

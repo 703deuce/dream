@@ -1,316 +1,234 @@
 import os
 import json
-import base64
-import io
-import torch
-import diffusers
-from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
-from diffusers.utils import logging
-from PIL import Image
 import requests
-from typing import Dict, Any, List
-import tempfile
-import shutil
-from pathlib import Path
-from huggingface_hub import login as hf_login
-import subprocess
-import sys
+from typing import Dict, Any
 
-# Configure Accelerate for serverless RunPod environment (non-interactive)
-try:
-    from accelerate.utils import write_basic_config
-    write_basic_config()
-    print("✅ Accelerate configuration initialized for serverless environment")
-except Exception as e:
-    print(f"⚠️  Warning: Failed to initialize Accelerate config: {e}")
+# RunPod API configuration
+RUNPOD_API_KEY = "rpa_C55TBQG7H6FM7G3Q7A6JM7ZJCDKA3I2J3EO0TAH8fxyddo"
+RUNPOD_ENDPOINT_ID = "91tusc6dbmyceo"
+RUNPOD_API_URL = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/run"
 
-# Configure logging
-logging.set_verbosity_info()
+# Hugging Face token for model access
+HF_TOKEN = "hf_tWPbNOzCCIzqbaOWZOCDGilXwKfb"
 
-# Load environment variables for API keys and tokens
-HF_TOKEN = os.getenv("HF_TOKEN")
-RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY")
-RUNPOD_ENDPOINT_URL = os.getenv("RUNPOD_ENDPOINT_URL")
-
-# Login to Hugging Face if token is provided
-if HF_TOKEN:
+def start_training(
+    instance_prompt: str = "a photo of sks dog",
+    max_train_steps: int = 500,
+    resolution: int = 1024,
+    learning_rate: float = 1.0,
+    train_batch_size: int = 1,
+    gradient_accumulation_steps: int = 4
+) -> Dict[str, Any]:
+    """
+    Start DreamBooth training on RunPod via API call.
+    
+    Args:
+        instance_prompt: The prompt describing the subject to train
+        max_train_steps: Maximum training steps
+        resolution: Image resolution for training
+        learning_rate: Learning rate for training
+        train_batch_size: Training batch size
+        gradient_accumulation_steps: Gradient accumulation steps
+    
+    Returns:
+        Dict containing the API response and job status
+    """
+    
+    # Prepare the training command
+    training_command = f"""
+    cd /workspace/diffusers/dreambooth && \\
+    python run_training.py \\
+    --instance_prompt "{instance_prompt}" \\
+    --max_train_steps {max_train_steps} \\
+    --resolution {resolution} \\
+    --learning_rate {learning_rate} \\
+    --train_batch_size {train_batch_size} \\
+    --gradient_accumulation_steps {gradient_accumulation_steps}
+    """
+    
+    # Prepare the API request payload
+    payload = {
+        "input": {
+            "command": training_command.strip(),
+            "model_name": "black-forest-labs/FLUX.1-dev",
+            "instance_prompt": instance_prompt,
+            "max_train_steps": max_train_steps,
+            "resolution": resolution,
+            "learning_rate": learning_rate,
+            "train_batch_size": train_batch_size,
+            "gradient_accumulation_steps": gradient_accumulation_steps
+        }
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {RUNPOD_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
     try:
-        hf_login(token=HF_TOKEN)
-        print("✅ Successfully logged in to Hugging Face")
-    except Exception as e:
-        print(f"⚠️  Warning: Failed to login to Hugging Face: {e}")
-else:
-    print("⚠️  Warning: HF_TOKEN not provided. Some models may not be accessible.")
-
-class DreamBoothFluxHandler:
-    def __init__(self):
-        # Check GPU availability for RunPod environment
-        if torch.cuda.is_available():
-            self.device = "cuda"
-            print(f"✅ GPU detected: {torch.cuda.get_device_name(0)}")
-            print(f"   CUDA version: {torch.version.cuda}")
-            print(f"   GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
-        else:
-            self.device = "cpu"
-            print("⚠️  No GPU detected, using CPU (not recommended for training)")
+        print(f"🚀 Starting training on RunPod...")
+        print(f"📝 Instance prompt: {instance_prompt}")
+        print(f"⚙️ Training steps: {max_train_steps}")
+        print(f"🖼️ Resolution: {resolution}")
         
-        self.model_id = "black-forest-labs/FLUX.1-dev"  # FLUX model for DreamBooth Flux
-        self.pipeline = None
-        self.trained_model_path = None
-        
-        # Optional: Configure torch.compile for dramatic speedups (if supported)
-        # Set ENABLE_TORCH_COMPILE=true in RunPod environment variables for speedups
-        self.enable_torch_compile = os.getenv("ENABLE_TORCH_COMPILE", "false").lower() == "true"
-        if self.enable_torch_compile and hasattr(torch, 'compile'):
-            print("🚀 Torch compile mode enabled for dramatic speedups")
-        elif self.enable_torch_compile:
-            print("⚠️  Torch compile requested but not available in this PyTorch version")
-        
-        # Initialize Accelerator with TorchDynamoPlugin for dramatic speedups when enabled
-        if self.enable_torch_compile:
-            try:
-                from accelerate import Accelerator
-                from accelerate.utils import TorchDynamoPlugin
-                
-                dynamo_plugin = TorchDynamoPlugin(
-                    backend="inductor",   # Best backend for speedups
-                    mode="default",       # Balanced performance
-                    fullgraph=True,       # Compile entire graph
-                    dynamic=False         # Static compilation for better performance
-                )
-                self.accelerator = Accelerator(dynamo_plugin=dynamo_plugin)
-                print("🚀 Accelerator initialized with TorchDynamoPlugin for dramatic speedups!")
-            except Exception as e:
-                print(f"⚠️  Failed to initialize TorchDynamoPlugin: {e}")
-                self.accelerator = None
-        else:
-            self.accelerator = None
-        
-        print("🎯 Training mode: Full fine-tuning (UNet + Text Encoder) for maximum likeness - NOT LoRA")
-        print("💾 Memory optimization: bitsandbytes 8-bit optimizer + gradient checkpointing supported")
-        print("📚 Note: For AdamW optimizer, use --use_8bit_adam flag (not needed with Prodigy)")
-        print("🐕 Dog example dataset available at /workspace/dream/dog (from FLUX README)")
-        
-    def load_model(self, model_path: str = None):
-        """Load the trained model or base model"""
-        if model_path and os.path.exists(model_path):
-            self.pipeline = StableDiffusionPipeline.from_pretrained(
-                model_path,
-                torch_dtype=torch.float16,
-                safety_checker=None
-            )
-            self.trained_model_path = model_path
-        else:
-            self.pipeline = StableDiffusionPipeline.from_pretrained(
-                self.model_id,
-                torch_dtype=torch.float16,
-                safety_checker=None
-            )
-        
-        self.pipeline.scheduler = DPMSolverMultistepScheduler.from_config(
-            self.pipeline.scheduler.config
+        # Make the API call to RunPod
+        response = requests.post(
+            RUNPOD_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=30
         )
-        self.pipeline = self.pipeline.to(self.device)
         
-    def download_images(self, image_urls: List[str], save_dir: str) -> List[str]:
-        """Download training images from URLs"""
-        os.makedirs(save_dir, exist_ok=True)
-        image_paths = []
-        
-        for i, url in enumerate(image_urls):
-            try:
-                response = requests.get(url, timeout=30)
-                response.raise_for_status()
-                
-                image_path = os.path.join(save_dir, f"image_{i:03d}.jpg")
-                with open(image_path, 'wb') as f:
-                    f.write(response.content)
-                image_paths.append(image_path)
-                
-            except Exception as e:
-                print(f"Failed to download image {url}: {e}")
-                
-        return image_paths
-    
-    def train_dreambooth(self, job_input: Dict[str, Any]) -> Dict[str, Any]:
-        """Train DreamBooth model using command line script for maximum likeness"""
-        try:
-            # Extract training parameters
-            instance_prompt = job_input.get("instance_prompt", "a photo of sks person")
-            class_prompt = job_input.get("class_prompt", "a photo of a person")
-            instance_data_dir = job_input.get("instance_data_dir", "/tmp/instance_data")
-            output_dir = job_input.get("output_dir", "/tmp/dreambooth_output")
-            image_urls = job_input.get("image_urls", [])
-            
-            # Create training directory
-            os.makedirs(instance_data_dir, exist_ok=True)
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Download training images if URLs provided
-            if image_urls:
-                self.download_images(image_urls, instance_data_dir)
-            
-            # Build command line arguments for FLUX DreamBooth FULL FINE-TUNING (not LoRA)
-            # This trains both UNet and Text Encoder for maximum likeness
-            # Based on official FLUX README: https://github.com/huggingface/diffusers/tree/main/examples/dreambooth
-            cmd = [
-                sys.executable,  # Use current Python interpreter
-                "diffusers/examples/dreambooth/train_dreambooth_flux.py",
-                "--pretrained_model_name_or_path", self.model_id,
-                "--instance_data_dir", instance_data_dir,
-                "--output_dir", output_dir,
-                "--mixed_precision", "bf16",  # FLUX uses bf16
-                "--instance_prompt", instance_prompt,
-                "--resolution", "1024",  # FLUX uses 1024 resolution for best quality
-                "--train_batch_size", "1",
-                "--guidance_scale", "1",
-                "--gradient_accumulation_steps", "4",
-                "--optimizer", "prodigy",  # Prodigy optimizer for best results (recommended)
-                "--learning_rate", "1.",  # FLUX uses 1.0 learning rate with Prodigy
-                "--report_to", "tensorboard",  # Use tensorboard for logging (wandb requires login)
-                "--lr_scheduler", "constant",
-                "--lr_warmup_steps", "0",
-                "--max_train_steps", "1000",  # Increased for better likeness
-                "--validation_prompt", instance_prompt,  # Validate with instance prompt
-                "--validation_epochs", "25",  # Regular validation
-                "--seed", "0",
-                "--train_text_encoder",  # CRITICAL: Train text encoder for best likeness
-                "--gradient_checkpointing",  # Memory optimization for 16GB GPU support
-                "--cache_latents",  # Memory optimization
-                "--aspect_ratio_buckets", "672,1568;688,1504;720,1456;752,1392;800,1328;832,1248;880,1184;944,1104;1024,1024;1104,944;1184,880;1248,832;1328,800;1392,752;1456,720;1504,688;1568,672"  # Support different aspect ratios
-            ]
-            
-            # Optional: Add 8-bit Adam optimizer support for memory efficiency
-            # Note: Only needed if using AdamW optimizer (not Prodigy)
-            if job_input.get("use_8bit_adam", False):
-                cmd.extend(["--use_8bit_adam"])
-                print("💾 8-bit Adam optimizer enabled for memory efficiency")
-            
-            print("🚀 Starting FLUX DreamBooth training with maximum likeness settings...")
-            print(f"📸 Training on {len(os.listdir(instance_data_dir))} images")
-            print(f"🎯 Instance prompt: {instance_prompt}")
-            print(f"🔧 Training text encoder: True")
-            print(f"📏 Resolution: 1024")
-            print(f"⚡ Optimizer: prodigy")
-            print(f"🖥️  Command: {' '.join(cmd)}")
-            
-            # Run the training command
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=os.getcwd()  # Run from current directory
-            )
-            
-            if result.returncode == 0:
-                print("✅ Training completed successfully!")
-                return {
-                    "status": "success",
-                    "message": "FLUX DreamBooth training completed successfully with maximum likeness settings",
-                    "output_dir": output_dir,
-                    "model_path": output_dir,
-                    "stdout": result.stdout,
-                    "stderr": result.stderr
-                }
-            else:
-                print(f"❌ Training failed with return code {result.returncode}")
-                print(f"STDOUT: {result.stdout}")
-                print(f"STDERR: {result.stderr}")
-                return {
-                    "status": "error",
-                    "message": f"Training failed with return code {result.returncode}",
-                    "stdout": result.stdout,
-                    "stderr": result.stderr,
-                    "return_code": result.returncode
-                }
-            
-        except Exception as e:
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Training job started successfully!")
+            print(f"🆔 Job ID: {result.get('id', 'Unknown')}")
             return {
-                "status": "error",
-                "message": f"Training failed: {str(e)}",
-                "error_details": str(e)
+                "success": True,
+                "job_id": result.get('id'),
+                "status": "started",
+                "message": "Training job initiated successfully",
+                "response": result
             }
-    
-    def generate_image(self, job_input: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate image using trained model"""
-        try:
-            prompt = job_input.get("prompt", "a photo of sks person")
-            negative_prompt = job_input.get("negative_prompt", "blurry, bad quality, distorted, low resolution, ugly, deformed")
-            num_inference_steps = job_input.get("num_inference_steps", 50)
-            guidance_scale = job_input.get("guidance_scale", 7.5)
-            width = job_input.get("width", 1024)  # Default to FLUX resolution
-            height = job_input.get("height", 1024)
-            num_images = job_input.get("num_images", 1)
-            
-            # Load model if not already loaded
-            if self.pipeline is None:
-                model_path = job_input.get("model_path")
-                self.load_model(model_path)
-            
-            # Generate images
-            images = self.pipeline(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                num_inference_steps=num_inference_steps,
-                guidance_scale=guidance_scale,
-                width=width,
-                height=height,
-                num_images_per_prompt=num_images,
-            ).images
-            
-            # Convert images to base64
-            image_data = []
-            for i, image in enumerate(images):
-                buffer = io.BytesIO()
-                image.save(buffer, format="PNG")
-                img_str = base64.b64encode(buffer.getvalue()).decode()
-                image_data.append({
-                    "image": img_str,
-                    "index": i
-                })
-            
+        else:
+            print(f"❌ Failed to start training: {response.status_code}")
+            print(f"Response: {response.text}")
             return {
-                "status": "success",
-                "images": image_data,
-                "prompt": prompt,
-                "parameters": {
-                    "num_inference_steps": num_inference_steps,
-                    "guidance_scale": guidance_scale,
-                    "width": width,
-                    "height": height
-                }
+                "success": False,
+                "error": f"API call failed with status {response.status_code}",
+                "response": response.text
             }
             
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Generation failed: {str(e)}"
-            }
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Network error: {str(e)}"
+        print(f"❌ {error_msg}")
+        return {
+            "success": False,
+            "error": error_msg
+        }
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        print(f"❌ {error_msg}")
+        return {
+            "success": False,
+            "error": error_msg
+        }
 
-# Global handler instance
-handler = DreamBoothFluxHandler()
+def check_training_status(job_id: str) -> Dict[str, Any]:
+    """
+    Check the status of a training job.
+    
+    Args:
+        job_id: The RunPod job ID to check
+    
+    Returns:
+        Dict containing the job status
+    """
+    
+    status_url = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/status/{job_id}"
+    headers = {"Authorization": f"Bearer {RUNPOD_API_KEY}"}
+    
+    try:
+        response = requests.get(status_url, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return {
+                "success": True,
+                "job_id": job_id,
+                "status": result.get('status'),
+                "response": result
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Failed to get status: {response.status_code}",
+                "response": response.text
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error checking status: {str(e)}"
+        }
 
 def handler(event, context):
-    """Main RunPod serverless handler"""
+    """
+    Main handler function for the API endpoint.
+    
+    Args:
+        event: API Gateway event containing the request
+        context: Lambda context
+    
+    Returns:
+        API response with training status
+    """
+    
     try:
-        # Parse input
-        job_input = event.get("input", {})
-        job_type = job_input.get("type", "generate")
-        
-        if job_type == "train":
-            result = handler.train_dreambooth(job_input)
-        elif job_type == "generate":
-            result = handler.generate_image(job_input)
+        # Parse the request body
+        if isinstance(event.get('body'), str):
+            body = json.loads(event['body'])
         else:
-            result = {
-                "status": "error",
-                "message": f"Unknown job type: {job_type}"
-            }
+            body = event.get('body', {})
         
-        return result
+        # Extract parameters from the request
+        instance_prompt = body.get('instance_prompt', 'a photo of sks dog')
+        max_train_steps = int(body.get('max_train_steps', 500))
+        resolution = int(body.get('resolution', 1024))
+        learning_rate = float(body.get('learning_rate', 1.0))
+        train_batch_size = int(body.get('train_batch_size', 1))
+        gradient_accumulation_steps = int(body.get('gradient_accumulation_steps', 4))
+        
+        # Check if this is a status check request
+        if body.get('action') == 'check_status' and body.get('job_id'):
+            result = check_training_status(body['job_id'])
+        else:
+            # Start a new training job
+            result = start_training(
+                instance_prompt=instance_prompt,
+                max_train_steps=max_train_steps,
+                resolution=resolution,
+                learning_rate=learning_rate,
+                train_batch_size=train_batch_size,
+                gradient_accumulation_steps=gradient_accumulation_steps
+            )
+        
+        # Return the API response
+        return {
+            'statusCode': 200 if result.get('success') else 400,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps(result)
+        }
         
     except Exception as e:
         return {
-            "status": "error",
-            "message": f"Handler error: {str(e)}"
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'success': False,
+                'error': f'Internal server error: {str(e)}'
+            })
         }
+
+# For local testing
+if __name__ == "__main__":
+    # Test the training start
+    print("🧪 Testing training API...")
+    result = start_training(
+        instance_prompt="a photo of sks cat",
+        max_train_steps=300,
+        resolution=512
+    )
+    print(f"Result: {json.dumps(result, indent=2)}")
+    
+    # If we got a job ID, test status check
+    if result.get('success') and result.get('job_id'):
+        print(f"\n📊 Checking status for job {result['job_id']}...")
+        status = check_training_status(result['job_id'])
+        print(f"Status: {json.dumps(status, indent=2)}")
