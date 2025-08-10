@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     curl \
     build-essential \
+    cmake \
+    ninja-build \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
@@ -55,8 +57,10 @@ RUN pip install --no-cache-dir bitsandbytes>=0.46.0
 # Install FLUX-specific dependencies
 RUN pip install --no-cache-dir prodigyopt
 
-# Install additional performance optimizations with exact versions
-RUN pip install --no-cache-dir ninja flash-attn==0.2.4 triton==2.0.0
+# Install additional performance optimizations (compatible versions for PyTorch 2.2+)
+RUN pip install --no-cache-dir ninja
+RUN pip install --no-cache-dir 'triton>=2.0.0,<2.1.0'
+RUN pip install --no-cache-dir 'flash-attn>=0.2.4,<0.3.0'
 
 # Install diffusers from local source for latest DreamBooth Flux support
 COPY diffusers/ ./diffusers/
@@ -72,7 +76,7 @@ RUN cd /workspace
 
 # Note: We're doing full fine-tuning, not LoRA, so PEFT is not needed
 
-# Download dog example dataset for testing
+# Download dog example dataset for testing (from FLUX README)
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('diffusers/dog-example', local_dir='/workspace/dog', repo_type='dataset', ignore_patterns='.gitattributes')"
 
 # Copy application files
@@ -87,10 +91,9 @@ ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 ENV CUDA_LAUNCH_BLOCKING=0
 ENV TORCH_CUDNN_V8_API_ENABLED=1
 
-# Environment variables for API keys and tokens (will be set by RunPod)
-ENV HF_TOKEN=""
-ENV RUNPOD_API_KEY=""
-ENV RUNPOD_ENDPOINT_URL=""
+# Environment variables for API keys and tokens (set by RunPod at runtime)
+# Note: These are not set in Dockerfile for security reasons
+# RunPod will inject them as environment variables when the container starts
 
 # Expose port (RunPod will handle this)
 EXPOSE 8000
