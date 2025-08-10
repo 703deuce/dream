@@ -89,10 +89,21 @@ RUN cd /workspace
 # Install additional required dependencies for CLIP and transformers AFTER requirements_flux.txt
 # This ensures we get the latest transformers version (>=4.41.2) from requirements_flux.txt
 # Use force-reinstall to avoid any corrupted installations
-RUN python -m pip install --upgrade --force-reinstall "transformers>=4.41.2"
+RUN python -m pip install --upgrade --force-reinstall "transformers[torch,vision,audio]>=4.41.2"
+
+# Also install specific CLIP dependencies explicitly
+RUN python -m pip install --no-cache-dir "clip @ git+https://github.com/openai/CLIP.git"
+
+# Install a specific transformers version known to have all CLIP modules
+RUN python -m pip install --no-cache-dir "transformers==4.42.0"
 
 # Verify transformers installation and CLIP modules availability
-RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer; print('✅ CLIP modules imported successfully')"
+RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); print('Available CLIP modules:'); import inspect; [print(f'  {name}') for name in dir(transformers) if 'CLIP' in name]"
+
+# Try importing CLIP modules individually to identify which ones are missing
+RUN python -c "from transformers import CLIPTextModel; print('✅ CLIPTextModel imported successfully')" || echo "❌ CLIPTextModel import failed"
+RUN python -c "from transformers import CLIPTokenizer; print('✅ CLIPTokenizer imported successfully')" || echo "❌ CLIPTokenizer import failed"
+RUN python -c "from transformers import CLIPImageProcessor; print('✅ CLIPImageProcessor imported successfully')" || echo "❌ CLIPImageProcessor import failed"
 
 # Double-check: Verify the exact transformers package location and contents
 RUN python -c "import transformers; print(f'Transformers version: {transformers.__version__}'); print(f'Transformers package location: {transformers.__file__}')"
