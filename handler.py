@@ -1,11 +1,44 @@
 import os
 import json
 import requests
+import subprocess
+import logging
 from typing import Dict, Any
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def check_gpu_health():
+    """Check GPU health and availability"""
+    try:
+        # Check if nvidia-smi is available
+        result = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total,memory.free', '--format=csv,noheader,nounits'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            gpu_info = result.stdout.strip().split('\n')
+            logger.info(f"GPU Health Check: Found {len(gpu_info)} GPU(s)")
+            for i, gpu in enumerate(gpu_info):
+                logger.info(f"GPU {i}: {gpu}")
+            return True
+        else:
+            logger.error(f"GPU Health Check Failed: {result.stderr}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        logger.error("GPU Health Check: nvidia-smi timed out")
+        return False
+    except FileNotFoundError:
+        logger.error("GPU Health Check: nvidia-smi not found")
+        return False
+    except Exception as e:
+        logger.error(f"GPU Health Check Error: {str(e)}")
+        return False
 
 # RunPod API configuration
 RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY", "")
-RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID", "91tusc6dbmyceo")
+RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID", "")
 RUNPOD_API_URL = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/run"
 
 # Hugging Face token for model access
@@ -171,6 +204,23 @@ def handler(event, context):
     """
     
     try:
+        # First, check GPU health
+        print("🔍 Checking GPU health...")
+        gpu_healthy = check_gpu_health()
+        
+        if not gpu_healthy:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'GPU health check failed - container may not have proper GPU access'
+                })
+            }
+        
         # Parse the request body
         if isinstance(event.get('body'), str):
             body = json.loads(event['body'])
