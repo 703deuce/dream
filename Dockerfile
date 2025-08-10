@@ -79,11 +79,15 @@ RUN cd /workspace/diffusers && python -m pip install -e .
 # Then cd in the example folder /workspace/diffusers/examples/dreambooth/ and run pip install -r requirements_flux.txt
 RUN cd /workspace/diffusers/examples/dreambooth && python -m pip install -r requirements_flux.txt
 
-# Install additional required dependencies for CLIP and transformers
-RUN python -m pip install --no-cache-dir transformers[torch]>=4.35.0
-
 # Return to workspace
 RUN cd /workspace
+
+# Install additional required dependencies for CLIP and transformers AFTER requirements_flux.txt
+# This ensures we get the latest transformers version (>=4.41.2) from requirements_flux.txt
+RUN python -m pip install --no-cache-dir --upgrade transformers
+
+# Verify transformers installation and CLIP modules availability
+RUN python -c "from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer; print('✅ CLIP modules imported successfully'); print(f'Transformers version: {transformers.__version__}')"
 
 # Note: We're doing full fine-tuning, not LoRA, so PEFT is not needed
 
