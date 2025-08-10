@@ -4,12 +4,12 @@ import requests
 from typing import Dict, Any
 
 # RunPod API configuration
-RUNPOD_API_KEY = "rpa_C55TBQG7H6FM7G3Q7A6JM7ZJCDKA3I2J3EO0TAH8fxyddo"
-RUNPOD_ENDPOINT_ID = "91tusc6dbmyceo"
+RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY", "")
+RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID", "91tusc6dbmyceo")
 RUNPOD_API_URL = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/run"
 
 # Hugging Face token for model access
-HF_TOKEN = "hf_tWPbNOzCCIzqbaOWZOCDGilXwKfb"
+HF_TOKEN = os.getenv("HF_TOKEN", "")
 
 def start_training(
     instance_prompt: str = "a photo of sks dog",
@@ -19,6 +19,12 @@ def start_training(
     train_batch_size: int = 1,
     gradient_accumulation_steps: int = 4
 ) -> Dict[str, Any]:
+    # Check if API keys are provided
+    if not RUNPOD_API_KEY:
+        return {
+            "success": False,
+            "error": "RUNPOD_API_KEY environment variable not set"
+        }
     """
     Start DreamBooth training on RunPod via API call.
     
