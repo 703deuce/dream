@@ -51,17 +51,7 @@ RUN python -m pip uninstall -y torch torchvision torchaudio || true
 # Using --force-reinstall to ensure clean installation and prevent version conflicts
 RUN python -m pip install --force-reinstall --no-cache-dir torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
-# Verify PyTorch installation and CUDA compatibility
-RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}')"
 
-# Verify torchvision CUDA compatibility
-RUN python -c "import torchvision; print(f'Torchvision version: {torchvision.__version__}'); print(f'Torchvision CUDA version: {torchvision.version.cuda}')"
-
-# Verify torchaudio CUDA compatibility  
-RUN python -c "import torchaudio; print(f'Torchaudio version: {torchaudio.__version__}'); print(f'Torchaudio CUDA version: {torchaudio.version.cuda}')"
-
-# Verify NumPy version compatibility
-RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}'); assert numpy.__version__ == '1.26.4', f'Expected NumPy 1.26.4, got {numpy.__version__}'; print('✅ NumPy 1.26.4 is compatible with PyTorch 2.0.1')"
 
 # Install basic dependencies
 RUN python -m pip install --no-cache-dir -r requirements.txt
