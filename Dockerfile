@@ -44,26 +44,26 @@ RUN python -m pip uninstall -y torch torchvision torchaudio || true
 
 # Install PyTorch with CUDA support (confirmed compatible versions for CUDA 11.8)
 # Install all PyTorch packages together with matching versions to avoid conflicts
-# Using PyTorch 2.0.1 family for best compatibility with xformers==0.0.20 and existing workflows
-RUN python -m pip install --force-reinstall --no-cache-dir torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+# Using PyTorch 2.4.1 family for compatibility with bitsandbytes 0.46.1 and modern ML libraries
+RUN python -m pip install --force-reinstall --no-cache-dir torch==2.4.1+cu118 torchvision==0.19.1+cu118 torchaudio==2.4.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
 
 
 # Install basic dependencies
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
-# Fix NumPy version compatibility with PyTorch 2.0.1
-# PyTorch 2.0.1 works with NumPy 1.21.0 to 1.24.x
-# Use numpy>=1.21.0,<1.25.0 which is compatible with PyTorch 2.0.1 and CUDA 11.8
-RUN python -m pip install --force-reinstall --no-cache-dir "numpy>=1.21.0,<1.25.0"
+# Fix NumPy version compatibility with PyTorch 2.4.1
+# PyTorch 2.4.1 works with NumPy 1.21.0 to 1.26.x
+# Use numpy>=1.21.0,<1.27.0 which is compatible with PyTorch 2.4.1 and CUDA 11.8
+RUN python -m pip install --force-reinstall --no-cache-dir "numpy>=1.21.0,<1.27.0"
 
 # Clean up any potential conflicting packages and ensure clean environment
 RUN python -m pip uninstall -y transformers || true
 RUN python -m pip cache purge
 
-# Install performance optimizations (compatible with PyTorch 2.0.1)
-# Use specific versions that work with PyTorch 2.0.1 and CUDA 11.8
-RUN python -m pip install --no-cache-dir xformers==0.0.20
+# Install performance optimizations (compatible with PyTorch 2.4.1)
+# Use specific versions that work with PyTorch 2.4.1 and CUDA 11.8
+RUN python -m pip install --no-cache-dir xformers>=0.0.22
 
 # Install bitsandbytes for 8-bit optimizer support (latest stable version)
 RUN python -m pip install --no-cache-dir bitsandbytes>=0.46.0
@@ -71,9 +71,9 @@ RUN python -m pip install --no-cache-dir bitsandbytes>=0.46.0
 # Install FLUX-specific dependencies
 RUN python -m pip install --no-cache-dir prodigyopt
 
-# Install additional performance optimizations (compatible versions for PyTorch 2.0.1)
+# Install additional performance optimizations (compatible versions for PyTorch 2.4.1)
 RUN python -m pip install --no-cache-dir ninja
-RUN python -m pip install --no-cache-dir 'triton>=2.0.0,<2.1.0'
+RUN python -m pip install --no-cache-dir 'triton>=2.0.0,<2.2.0'
 # Use flash-attn 2.7.4.post1 which is compatible with glibc 2.31 (Ubuntu 20.04)
 RUN python -m pip install --no-cache-dir 'flash-attn==2.7.4.post1'
 
